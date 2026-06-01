@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Think Earth Network Map</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    :root {
+      --blue: #1f5a99;
+      --teal: #159a9c;
+      --purple: #8d5597;
+      --orange: #f47a00;
+      --green: #6fa53b;
+      --text: #1f2933;
+      --muted: #667085;
+      --line: #012f68;
+      --bg: #f6f7f5;
+      --card: #ffffff;
+      --black: #000000;
+      --pink: #FF5C7A;
+      --partner: #264653;
+  --collaborator: #14B8A6;
+  --community: #F43F5E;
+  --flagship: #4361EE;
+  --open: #4CC9F0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr 340px;
+      height: 100vh;
+    }
+
+    aside,
+    .detail-panel {
+      background: var(--card);
+      border-right: 1px solid var(--line);
+      padding: 24px;
+      overflow: auto;
+    }
+
+    .detail-panel {
+      border-right: none;
+      border-left: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 26px 0 12px;
+      color: var(--muted);
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    p {
+      line-height: 1.45;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .map-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .legend-item,
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      flex: 0 0 16px;
+   }
+
+
+
+    .dot.partner { background: var(--partner); }
+.dot.collaborator { background: var(--collaborator); }
+.dot.community { background: var(--community); }
+.dot.flagship { background: var(--flagship); }
+.dot.open { background: var(--open); }
+
+    button.filter-item {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.15s ease;
+    }
+
+    button.filter-item:hover,
+    button.filter-item.active {
+      border-color: #1f2933;
+      background: #f3f5f7;
+    }
+
+    .topbar {
+      position: absolute;
+      z-index: 999;
+      left: 50px;
+      right: 24px;
+      top: 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .search {
+      pointer-events: auto;
+      width: 320px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      background: #eef2f6;
+      color: var(--muted);
+      margin: 4px 4px 4px 0;
+    }
+
+    .status-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .image-placeholder {
+      height: 180px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #e5dfd4, #c6b99f);
+      display: flex;
+      align-items: end;
+      padding: 16px;
+      color: white;
+      font-weight: 700;
+      margin: 18px 0;
+    }
+
+    .custom-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+
+    .selected-marker {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 4px solid white;
+      box-shadow: 0 0 0 6px rgba(244, 122, 0, 0.25), 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .footer-note {
+      position: absolute;
+      bottom: 20px;
+      left: 24px;
+      z-index: 999;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    }
+.get-involved {
+  margin-top: 50px;
+}
+    @media (max-width: 1100px) {
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .map-wrap {
+    order: 1;
+    height: 60vh;
+
+  
+  }
+
+  aside {
+    order: 2;
+    border: none;
+    padding: 12px 16px;
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .detail-panel {
+    order: 3;
+    border: none;
+  }
+
+  aside h1,
+  aside .subtitle,
+  aside h2,
+  aside p {
+    display: none;
+  }
+
+  .filter-item {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 12px;
+    border-radius: 999px;
+  }
+
+  .topbar {
+    left: 70px;
+    right: 16px;
+    top: 16px;
+  }
+
+  .search {
+    width: 400px;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h1>Think Earth Network Map</h1>
+      <p class="subtitle">Partners, collaborators and case studies for regenerative construction.</p>
+
+      <button class="filter-item active" data-filter="all"><span class="dot"></span>Show all</button>
+
+      <h2>Partner Categories</h2>
+      <button class="filter-item" data-filter="partner"><span class="dot partner"></span>Partners</button>
+      <button class="filter-item" data-filter="collaborator"><span class="dot collaborator"></span>Collaborators</button>
+      <button class="filter-item" data-filter="community"><span class="dot community"></span>Community</button>
+
+      <h2>Case Study Categories</h2>
+      <button class="filter-item" data-filter="flagship"><span class="dot flagship"></span>Case Studies</button>
+      <button class="filter-item" data-filter="open"><span class="dot open"></span>Innovation Sites</button>
+
+      <h2>About</h2>
+      <p>
+        This prototype visualises the extended Think Earth ecosystem and invites users to explore partners, case studies and innovation sites across Switzerland.
+      </p>
+    </aside>
+
+    <main class="map-wrap">
+      <div class="topbar">
+        <input class="search" id="search" placeholder="Search Partners or Case Studies…" />
+      </div>
+      <div id="map"></div>
+      <div class="footer-note">Prototype interface</div>
+    </main>
+
+   <section class="detail-panel" id="detail">
+  <p class="badge">Overview</p>
+  <h3>Explore Network</h3>
+  <p class="subtitle">Partners, collaborators and case studies across Switzerland</p>
+  <p>
+Select a point on the map to view details about a partner, case study or innovation site.  </p>
+  <p>
+    Use the filters to navigate the network by category.
+
+
+
+ <div class="get-involved">
+  <h2>Get involved</h2>
+
+  <p>
+    Interested in joining the Think Earth network?
+    <br>
+    <a href="https://thinkearth.ethz.ch/subprojekte/teilprojekt-9/case-studies/2026/02/pavilion-manal.html" target="_blank">
+      Learn more
+    </a>
+  </p>
+</div>
+  </p>
+</section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+   const colorSchemes = {
+
+  original: {
+    partner: '#1f5a99',
+    collaborator: '#159a9c',
+    community: '#8d5597',
+    flagship: '#f47a00',
+    open: '#6fa53b'
+  },
+
+erdig: {
+  partner: '#B91C1C',      // Rostrot
+  collaborator: '#0891B2', // Lehmrot
+  community: '#7C3AED',    // Cyan-Teal
+  flagship: '#1F2937',     // Anthrazit
+  open: '#475569'          // Schiefergrau
+  },
+
+newblue: {
+
+partner: '#264653',
+collaborator: '#14B8A6',
+
+flagship: '#4361EE',     // Royal Blue
+open: '#4CC9F0',         // Cyan
+
+community: '#F72585',    // Pink
+
+  },
+
+  thinkEarth: {
+ partner: '#264653',
+collaborator: '#2A9D8F',
+
+flagship: '#E76F51',
+open: '#E9C46A',
+
+community: '#9F1239',
+},
+
+
+};
+const categoryColors = colorSchemes.newblue;
+
+    const items = [
+  {
+    title: 'Pavilion MANAL',
+    category: 'flagship',
+    location: 'Horw / Lucerne',
+    coords: [47.0147, 8.3051],
+    description: 'Earth-building pavilion on the HSLU campus in Horw, investigating circular and low-emission building with timber and earth under real weather conditions.',
+    phases: 'Implementation, Monitoring',
+    status: 'Completed / ongoing monitoring',
+    innovation: 'Cast earth components',
+    partners: 'Chair of Architecture and Building Systems (A/S), ETH Zurich; Hochschule Luzern (HSLU); Marti AG; Oxara AG; WaltGalmarini AG',
+  related: [
+    'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+    'Hochschule Luzern (HSLU)',
+    'Marti AG',
+    'Oxara AG',
+    'WaltGalmarini AG'
+  ]
+  },
+
+  {
+    title: 'ETH Lab',
+    category: 'flagship',
+    location: 'Zurich',
+    coords: [47.4090, 8.5053],
+    description: 'Specialised ETH Zurich laboratory investigating timber–earth elements under controlled conditions.',
+    phases: 'Implementation, Monitoring',
+    status: 'In progress',
+    innovation: 'Thermally activated earth ceiling; Impact Printing',
+    partners:'Chair of Architecture and Building Systems (A/S), ETH Zurich; Chair of Structural Design, ETH Zurich; Impact Printing, ETH Zurich; Hochschule Luzern (HSLU); Rematter AG',
+    contact: 'illias.hischier@arch.ethz.ch',
+    related: [
+  'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+  'Chair of Structural Design, ETH Zurich',
+  'Impact Printing, ETH Zurich',
+  'Hochschule Luzern (HSLU)',
+  'Rematter AG'
+]
+  },
+{
+  title: 'Lab Dachs',
+  category: 'open',
+  location: 'Zurich Altstetten',
+  coords: [47.3889, 8.4805],
+  description: 'Retrofit project of a 1970s apartment building in Zurich Altstetten. The re.act collective is transforming two apartments into a living laboratory for testing and advancing regenerative materials, circular construction approaches and low-impact retrofit strategies within the existing urban building stock.',
+  phases: 'Implementation, Monitoring',
+  status: 'In progress',
+  innovation: 'Regenerative retrofit strategies, circular materials and real-world performance monitoring in an occupied residential context',
+  partners: 're.act collective; atelier.krecl; IG Lehm Fachverband Schweiz; Schnetzer Puskas Ingenieure; Chair of Architecture and Building Systems (A/S), ETH Zurich; Chair of Sustainable Construction, ETH Zurich',
+  contact: 'tbd',
+  related: [
+    're.act collective',
+    'atelier.krecl',
+    'IG Lehm Fachverband Schweiz',
+    'Schnetzer Puskas Ingenieure',
+    'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+    'Chair of Sustainable Construction, ETH Zurich'
+  ]
+},
+  {
+    title: 'LabCube',
+    category: 'open',
+    location: 'Dübendorf',
+    coords: [47.4043, 8.6084],
+    description: 'Experimental façade on the Empa–Eawag campus combining recycled timber elements with earth-based materials.',
+    phases: 'Implementation, Monitoring',
+    status: 'In progress',
+    innovation: 'Earth-based façade systems; weathering resistance',
+    partners: 'Empa Dübendorf, FANGAN Architekten',
+    related: [
+  'Empa Dübendorf',
+  'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+  'FANGAN Architekten'
+]
+  },
+
+  {
+    title: 'Villa Oxford Living Lab',
+    category: 'flagship',
+    location: 'Acquarossa',
+    coords: [46.4546, 8.9364],
+    description: 'Multi-storey innovation building in Ticino combining integrated design, timber–earth elements, solar-passive strategies and low-tech approaches.',
+    phases: 'Design, Implementation',
+    status: 'Planned',
+    innovation: 'Solar-passive design with earth as hygrothermal buffer',
+    partners: 'Chair of Architecture and Building Systems (A/S), ETH Zurich; Blanco Architecture & Design; Küng Holzbau AG; WaltGalmarini AG',
+    related: [
+      'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+      'Blanco Architecture & Design',
+      'Küng Holzbau AG',
+      'WaltGalmarini AG'
+    ]
+  },
+
+  {
+    title: 'Haus Ehrhardt',
+    category: 'flagship',
+    location: 'Vienna',
+    coords: [48.2082, 16.3738],
+    description: 'Urban residential building made of prefabricated rammed-earth elements.',
+    phases: 'Design, Implementation',
+    status: 'Realisation unclear',
+    innovation: 'Prefabricated rammed-earth elements',
+    partners: 'Schnetzer Puskas Ingenieure AG',
+    related: [
+      'Schnetzer Puskas Ingenieure AG',
+      'Studio Boltshauser', 
+      'Waldhauser + Hermann AG'
+    ]
+  },
+
+  {
+    title: 'ETH Zurich',
+    category: 'partner',
+    location: 'Zurich',
+    coords: [47.3764, 8.5477],
+    description: 'Research partner and coordination node for TP9.'
+  },
+  {
+  title: 'Chair of Architecture and Building Systems (A/S), ETH Zurich',
+  category: 'partner',
+  parent: 'ETH Zurich',
+  location: 'Zurich',
+  coords: [47.40908, 8.5056],
+  description: 'Research group at ETH Zurich developing climate-neutral building systems through integrated design, regenerative materials, building performance research and full-scale experimentation.',
+  CaseStudies: 'Pavilion MANAL; LabCube; ETH Lab; Villa Oxford Living Lab; Lab Dachs',
+  innovation: 'Integrated design; building systems integration; hygrothermal performance; building monitoring; full-scale prototyping',
+  contact: 'illias.hischier@arch.ethz.ch',
+  related: [
+  'Pavilion MANAL',
+  'LabCube',
+  'ETH Lab',
+  'Villa Oxford Living Lab',
+  'Lab Dachs'
+]
+},
+
+{
+  title: 'Chair of Structural Design, ETH Zurich',
+  category: 'partner',
+  parent: 'ETH Zurich',
+  location: 'Zurich',
+  coords: [47.4082, 8.5060],
+  description: 'Think Earth research partner.',
+  related: [
+    'ETH Lab'
+  ]   
+},
+
+{
+  title: 'Studio Boltshauser',
+  category: 'partner',
+  parent: 'ETH Zurich',
+  location: 'Zurich',
+  coords: [47.4087, 8.5071],
+  description: 'Think Earth architecture partner.',
+  related: [
+    'Haus Ehrhardt'
+  ]
+},
+
+  {
+    title: 'Hochschule Luzern (HSLU)',
+    category: 'partner',
+    location: 'Horw',
+    coords: [47.0137, 8.3059],
+    description: 'Research partner for earth construction and material experimentation.',
+    related: [
+    'Pavilion MANAL',
+  'ETH Lab'
+]
+  },
+
+  {
+    title: 'Ostschweizer Fachhochschule (OST)',
+    category: 'partner',
+    location: 'Rapperswil',
+    coords: [47.2267, 8.8175],
+    description: 'Research partner.'
+  },
+
+  {
+    title: 'Berner Fachhochschule (BFH)',
+    category: 'partner',
+    location: 'Bern',
+    coords: [46.9480, 7.4474],
+    description: 'Research partner.'
+  },
+
+  {
+    title: 'Empa Dübendorf',
+    category: 'partner',
+    location: 'Dübendorf',
+    coords: [47.4015, 8.6098],
+    description: 'Research partner and experimental infrastructure.',
+    related: [
+    'LabCube'
+  ]
+  },
+
+  {
+    title: 'Waldhauser + Hermann AG',
+    category: 'partner',
+    location: 'Switzerland',
+    coords: [46.8182, 8.2275],
+    description: 'Think Earth industry partner.'
+  },
+
+  {
+    title: 'TEN Architects',
+    category: 'partner',
+    location: 'Zurich',
+    coords: [47.3644, 8.5295],
+    description: 'Think Earth industry partner.'
+  },
+
+  {
+    title: 'Oxara AG',
+    category: 'partner',
+    location: 'Zurich',
+    coords: [47.3769, 8.5417],
+    description: 'Think Earth industry partner focusing on earth-based materials.',
+    related: [
+    'Pavilion MANAL'
+  ]
+  },
+
+  {
+    title: 'WaltGalmarini AG',
+    category: 'partner',
+    location: 'Zurich',
+    coords: [47.3579, 8.5212],
+    description: 'Think Earth engineering partner.',
+    related: [
+    'Pavilion MANAL',
+  'Villa Oxford Living Lab',
+]
+  },
+
+  {
+    title: 'Schnetzer Puskas Ingenieure AG',
+    category: 'partner',
+    location: 'Basel',
+    coords: [47.5596, 7.5886],
+    description: 'Think Earth engineering partner.',
+    related: [
+    'Haus Ehrhardt' 
+  ]
+  },
+
+  {
+    title: 'Blanco Architecture & Design',
+    category: 'partner',
+    location: 'Acquarossa',
+    coords: [46.4540, 8.9357],
+    description: 'Think Earth architecture and design partner.',
+    related: [
+    'Villa Oxford Living Lab'
+  ]
+  },
+
+  {
+    title: 'Marti AG',
+    category: 'partner',
+    location: 'Zurich',
+    coords: [47.4282, 8.4240],
+    description: 'Think Earth industry partner.',
+    related: [
+    'Pavilion MANAL'
+  ]
+  },
+
+  {
+    title: 'Rematter AG',
+    category: 'partner',
+    location: 'Risch-Rotkreuz',
+    coords: [47.1446, 8.4383],
+    description: 'Think Earth industry partner.',
+    related: [
+    'ETH Lab'
+  ] 
+  },
+
+  {
+    title: 'Küng Holzbau AG',
+    category: 'partner',
+    location: 'Alpnach',
+    coords: [46.9422, 8.2788],
+    description: 'Think Earth timber construction partner.',
+    related: [
+      'Villa Oxford Living Lab'
+    ]
+  },
+
+  {
+    title: 'Makiol Wiederkehr AG',
+    category: 'partner',
+    location: 'Switzerland',
+    coords: [47.2763, 8.2009],
+    description: 'Think Earth industry partner.'
+  },
+
+  {
+    title: 'FANGAN Architekten',
+    category: 'collaborator',
+    location: 'Zurich',
+    coords: [47.3625, 8.5146],
+    description: 'Think Earth collaborator.',
+    related: [
+    'LabCube'
+  ]
+  },
+
+  {
+    title: 'Atelier Krecl',
+    category: 'collaborator',
+    location: 'Zurich',
+    coords: [47.3787, 8.5251],
+    description: 'Think Earth collaborator.'
+  },
+
+  {
+    title: 'TEST – community',
+    category: 'community',
+    location: 'Bern',
+    coords: [46.1480, 7.4474],
+    description: 'Placeholder entry for testing the Think Earth Community category.'
+  }
+];
+
+    const map = L.map('map', {
+  zoomControl: false,
+  attributionControl: false
+}).setView([46.85, 8.23], 7);
+
+L.control.attribution({
+  prefix: false
+}).addTo(map);
+
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  
+  {
+    maxZoom: 20,
+    attribution: '&copy; OpenStreetMap'
+  }
+).addTo(map);
+map.on('zoomend', () => {
+renderMarkers(currentFilter);
+});
+
+    const markers = [];
+let currentFilter = 'all';
+let selectedItem = null;
+let searchItem = null;
+let relationLines = [];
+    function markerIcon(item) {
+
+    const zoom = map.getZoom();
+
+    let size;
+    const communityView =
+  currentFilter === 'community' &&
+  ['partner', 'collaborator', 'community'].includes(item.category);
+
+let opacity = 1;
+
+if (item.category === 'partner') opacity = 0.7;
+if (item.category === 'collaborator') opacity = 0.7;
+if (item.category === 'flagship') opacity = 0.8;
+if (item.category === 'open') opacity = 0.8;
+if (item.category === 'community') opacity = 0.7;
+if (communityView) opacity =0.7;
+
+const isRelated =
+  selectedItem &&
+  selectedItem.related &&
+  selectedItem.related.includes(item.title);
+
+const isSelected =
+  selectedItem &&
+  selectedItem.title === item.title;
+
+if (isRelated) opacity = 0.7;
+if (isSelected) opacity = 0.7;
+
+const color = isRelated
+  ? '#808B9A'
+  : communityView
+    ? '#F72585'
+    : categoryColors[item.category];
+
+    if (item.category === 'flagship' || item.category === 'open') {
+   size = Math.max(25, zoom * 2.2);
+} else {
+  size = Math.max(16, zoom * 0.7);
+
+} 
+
+const shape =
+  ['flagship', 'open'].includes(item.category)
+   ? `
+      clip-path: polygon(
+        25% 0%,
+        75% 0%,
+        100% 50%,
+        75% 100%,
+        25% 100%,
+        0% 50%
+      );
+       transform: rotate(90deg);
+    `
+    : 'border-radius: 50%;';
+
+    return L.divIcon({
+  className: '',
+  html: `
+    <div
+      style="
+        width:${size}px;
+        height:${size}px;
+        ${shape}
+        background:${color};
+        opacity:${opacity};
+        border:1.3px solid white; 
+        box-shadow:0 2px 6px rgba(0,0,0,0.18);
+      ">
+    </div>
+  `,
+  iconSize: [size, size],
+  iconAnchor: [size / 2, size / 2]
+});
+  }
+
+    function renderMarkers(filter = 'all') {
+  markers.forEach(m => map.removeLayer(m));
+  markers.length = 0;
+
+  relationLines.forEach(line => map.removeLayer(line));
+  relationLines = [];
+
+  items
+    .filter(item => {
+  if (searchItem) {
+    return item.title.toLowerCase().includes(searchItem);
+  }
+
+  if (selectedItem) {
+    return (
+      item.title === selectedItem.title ||
+      selectedItem.related?.includes(item.title) ||
+      item.related?.includes(selectedItem.title)
+    );
+  }
+
+      if (filter === 'all') return true;
+
+      if (filter === 'community') {
+        return ['partner', 'collaborator', 'community'].includes(item.category);
+      }
+
+      return item.category === filter;
+    })
+    .sort((a, b) => {
+  const order = {
+    open: 1,
+    flagship: 2,
+    community: 3,
+    collaborator: 4,
+    partner: 5
+  };
+
+  return order[a.category] - order[b.category];
+})
+.forEach(item => {
+      const isSelected =
+  selectedItem && selectedItem.title === item.title;
+
+const zIndex =
+  item.category === 'collaborator' ? 10000 :
+  item.category === 'partner' ? 8000 :
+  item.category === 'community' ? 6000 :
+  item.category === 'flagship' ? 3000 :
+  item.category === 'open' ? 1000 :
+  0;
+
+const marker = L.marker(item.coords, {
+  icon: markerIcon(item),
+  zIndexOffset: zIndex
+})
+        .addTo(map)
+        .bindTooltip(item.title)
+        .on('click', () => {
+          searchItem = null;
+          selectedItem = item;
+          updateDetail(item);
+          renderMarkers(currentFilter);
+          map.setView(item.coords, 7.5);
+        });
+
+      markers.push(marker);
+      if (
+  selectedItem &&
+  selectedItem.coords &&
+  (
+    selectedItem.related?.includes(item.title) ||
+    item.related?.includes(selectedItem.title)
+  )
+) {
+  const line = L.polyline(
+    [selectedItem.coords, item.coords],
+    {
+      color: '#94A3B8',
+      weight: 2,
+      opacity: 0.8,
+      dashArray: '6 4'
+    }
+  ).addTo(map);
+
+  line.bringToBack();
+  relationLines.push(line);
+}
+    });
+}
+
+function showOverview() {
+  document.getElementById('detail').innerHTML = `
+    <p class="badge">Overview</p>
+    <h3>Explore Network</h3>
+    <p class="subtitle">Partners, collaborators and case studies across Switzerland</p>
+
+    <p>
+      Select a point on the map to view details about a partner, case study or innovation site.
+    </p>
+
+    <p>
+      Use the filters to navigate the network by category.
+    </p>
+
+    <div class="get-involved">
+      <h2>Get involved</h2>
+      <p>
+        Interested in joining the Think Earth network?
+        <br>
+        <a href="https://thinkearth.ethz.ch/subprojekte/teilprojekt-9/case-studies/2026/02/pavilion-manal.html" target="_blank">
+          Learn more
+        </a>
+      </p>
+    </div>
+  `;
+}
+    function updateDetail(item) {
+      document.getElementById('detail').innerHTML = `
+        <p class="badge"><span class="dot ${item.category}"></span>${labelFor(item.category)}</p>
+        <h3>${item.title}</h3>
+        <p class="subtitle">${item.location}</p>
+
+        <p>${item.description}</p>
+        ${item.category === 'partner' || item.category === 'collaborator'
+  ? `
+  
+
+    <p>
+  <strong>Case Studies</strong><br>
+  ${item.CaseStudies || 'tbd'}
+</p>
+
+<p>
+  <strong>Innovations</strong><br>
+  ${item.innovation || 'tbd'}
+</p>
+
+<p>
+  <strong>Contact</strong><br>
+${item.contact
+  ? `<a href="mailto:${item.contact}">${item.contact}</a>`
+  : 'tbd'}
+</p>
+  `
+  : `
+    
+
+    <p>
+      <strong>Phases</strong><br>
+      ${item.phases || 'tbd'}
+    </p>
+
+    <p>
+      <strong>Status</strong><br>
+      ${item.status || 'tbd'}
+    </p>
+
+    <p>
+      <strong>Innovation</strong><br>
+      ${item.innovation || 'tbd'}
+    </p>
+
+    <p>
+      <strong>Partners</strong><br>
+      ${item.partners || 'tbd'}
+    </p>
+
+    <p>
+      <strong>Contact</strong><br>
+      ${item.contact || 'tbd'}
+    </p>
+  `
+}
+        
+      `;
+    }
+
+    function labelFor(category) {
+      return {
+        partner: 'Think Earth Partner',
+        collaborator: 'Think Earth Collaborator',
+        community: 'Think Earth Community',
+        flagship: 'Flagship Case Study',
+        open: 'Innovation Site'
+      }[category];
+    }
+
+   document.querySelectorAll('[data-filter]').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+    button.classList.add('active');
+
+    currentFilter = button.dataset.filter;
+selectedItem = null;
+searchItem = null;
+
+renderMarkers(currentFilter);
+map.setView([46.85, 8.23], 7);
+
+if (currentFilter === 'all') {
+  showOverview();
+} 
+  });
+});
+
+  document.getElementById('search').addEventListener('input', (event) => {
+  const query = event.target.value.toLowerCase().trim();
+
+  if (query.length < 2) {
+    searchItem = null;
+    selectedItem = null;
+    renderMarkers(currentFilter);
+    return;
+  }
+
+  searchItem = query;
+  selectedItem = null;
+
+  renderMarkers(currentFilter);
+
+  const match = items.find(item =>
+    item.title.toLowerCase().includes(query)
+  );
+
+  if (match) {
+    updateDetail(match);
+    map.setView(match.coords, 10);
+  }
+});
+
+    renderMarkers();
+  </script>
+</body>
+</html>
