@@ -89,6 +89,12 @@
       margin-bottom: 24px;
     }
 
+    .category-intro {
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
     .map-wrap {
       position: relative;
       min-width: 0;
@@ -171,7 +177,7 @@
       font-size: 12px;
       background: #eef2f6;
       color: var(--muted);
-      margin: 4px 4px 4px 0;
+      margin: 4px 4px 12px 0;
     }
 
     .status-card {
@@ -398,6 +404,53 @@ community: '#9F1239',
 };
 const categoryColors = colorSchemes.newblue;
 
+const categoryDescriptions = {
+  all: {
+    title: 'Explore Network',
+    badge: 'Overview',
+    text: 'Partners, collaborators and case studies across Switzerland.',
+    description: 'Select a point on the map to view details about a partner, case study or innovation site. Use the filters to navigate the network by category.'
+  },
+  partner: {
+    title: 'Partners',
+    badge: 'Think Earth Partner',
+    text: 'Official partners of the Innosuisse Flagship project Think Earth and driving forces behind its ten subprojects.',
+    role: 'Research, implementation and industry partners',
+    contribution: 'Research, development, implementation and knowledge transfer'
+  },
+
+  collaborator: {
+    title: 'Collaborators',
+    badge: 'Think Earth Collaborator',
+    text: 'Active external partners contributing to the research, development or implementation of regenerative construction approaches within Think Earth.',
+    role: 'External collaborators and project partners',
+    contribution: 'Specialised expertise, infrastructure, materials and implementation support'
+  },
+
+  community: {
+    title: 'Community',
+    badge: 'Think Earth Community',
+    text: 'Extended network of institutions, professionals and interested individuals who support, follow or help disseminate Think Earth activities.',
+    role: 'Network members and supporters',
+    contribution: 'Knowledge exchange, outreach and community building'
+  },
+
+  flagship: {
+    title: 'Case Studies',
+    badge: 'Flagship Case Study',
+    text: 'Core demonstration and research projects of the Innosuisse Flagship project Think Earth.',
+    role: 'Demonstration and research projects',
+    contribution: 'Testing, implementation and monitoring of regenerative construction approaches'
+  },
+
+  open: {
+    title: 'Innovation Sites',
+    badge: 'Innovation Site',
+    text: 'Real-world testing environments that enable research, experimentation and knowledge generation on regenerative construction approaches under practical conditions.',
+    role: 'Testing and experimentation environments',
+    contribution: 'Validation, monitoring and knowledge generation under real-world conditions'
+  }
+};
     const items = [
   {
     title: 'Pavilion MANAL',
@@ -925,6 +978,37 @@ const marker = L.marker(item.coords, {
     });
 }
 
+function showCategoryDescription(category) {
+  const info = categoryDescriptions[category];
+
+  document.getElementById('detail').innerHTML = `
+    <p class="badge">
+      <span class="dot ${category}"></span>
+      ${info.badge}
+    </p>
+
+    <h3>${info.title}</h3>
+
+    <p class="category-intro">${info.text}</p>
+
+    ${info.role ? `
+      <p>
+        <strong>Role</strong><br>
+        ${info.role}
+      </p>
+    ` : ''}
+
+    ${info.contribution ? `
+      <p>
+        <strong>Contribution</strong><br>
+        ${info.contribution}
+      </p>
+    ` : ''}
+
+    ${info.description ? `<p>${info.description}</p>` : ''}
+  `;
+}
+
 function showOverview() {
   document.getElementById('detail').innerHTML = `
     <p class="badge">Overview</p>
@@ -944,6 +1028,8 @@ function showOverview() {
       <p>
         Interested in joining the Think Earth network?
         <br>
+        <p>
+
         <a href="https://thinkearth.ethz.ch/subprojekte/teilprojekt-9/case-studies/2026/02/pavilion-manal.html" target="_blank">
           Learn more
         </a>
@@ -1036,7 +1122,9 @@ map.setView([46.85, 8.23], 7);
 
 if (currentFilter === 'all') {
   showOverview();
-} 
+} else {
+  showCategoryDescription(currentFilter);
+}
   });
 });
 
